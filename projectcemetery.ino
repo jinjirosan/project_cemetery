@@ -36,7 +36,7 @@ char autoGain_s[4] = "na";
 uint8_t error_code;
 uint8_t gain_setting;
 
-// Where to publish the data (options are: dweet, particle)
+// Where to publish the data (options are: "dweet" or "particle" dpending on where to send the output)
 String publishMethod = "dweet";
 
 // dweet thing name
@@ -82,6 +82,25 @@ int flashLedByHttpCode(long httpStatus) {
     } else {
         flash_rgb(255, 0);
     }
+}
+
+// Soil Moisture Sensor requirements
+int soilval = 0; //soilvalue for storing moisture soilvalue 
+int soilPin = A3;//Declare a variable for the soil moisture sensor 
+int soilPower = 3;//Variable for Soil moisture Power
+int thresholdUp = 400;//everything higher is ok, does not need water
+int thresholdDown = 250;//everything lower needs water
+String DisplayWords;
+int sensorValue;
+
+// Get the soil moisture content
+int readSoil()
+{
+    digitalWrite(soilPower, HIGH);//turn D3 "On"
+    delay(10);//wait 10 milliseconds 
+    soilval = analogRead(soilPin);//Read the SIG soilvalue form sensor 
+    digitalWrite(soilPower, LOW);//turn D3 "Off"
+    return soilval;//send current moisture soilvalue
 }
 
 void setup()
@@ -139,6 +158,9 @@ void setup()
   if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
     Serial.println("Couldn't find SHT31");
     }
+  // Soil Moisture Sensor setup
+  pinMode(soilPower, OUTPUT);//Set D3 as an OUTPUT
+  digitalWrite(soilPower, LOW);//Set to LOW so no power is flowing through the sensor
 }
 
 
@@ -216,13 +238,14 @@ void loop()
 // ROUND loop for temperature-humidity
   double t = round(sht31.readTemperature()*10)/10.0;
   double hum = round(sht31.readHumidity()*10)/10.0;
-  double tF = (t* 9) /5 + 32;
+  double tF = round(((t* 9) /5 + 32)*10)/10.0;
+  double s = readSoil();
   
   if (! isnan(t)) {  // check if 'is not a number'
      //Temperature in C
     Serial.print("Temp *C = "); Serial.println(t);
     Particle.variable("TempC", t);
-    Particle.publish("TempC", t);
+    Particle.publish("TempC", String(t));
     //Temperature in F
     Serial.print("Temp *F = "); Serial.println(tF);
     Particle.variable("TempF", tF);
@@ -234,20 +257,50 @@ void loop()
   if (! isnan(hum)) {  // check if 'is not a number'
     Serial.print("Hum. % = "); Serial.println(hum);
     Particle.variable("Humidity", hum);
-    Particle.publish("Humidity", hum);
+    Particle.publish("Humidity", String(hum));
   } else { 
     Serial.println("Failed to read humidity");
     Particle.publish("Failed to read humidity");
   }
-  Serial.println();
-  delay(1000);
   
+  if (! isnan(s)) {  // check if 'is not a number'
+    Serial.print("moisture = "); Serial.println(s);
+    Particle.variable("moisture", s);
+    Particle.publish("Soil moisture", String(s));
+  } else { 
+    Serial.println("Failed to read Soil moisture level");
+    Particle.publish("Failed to read Soil moisture level");
+  }
+    if (s <= thresholdDown){
+    DisplayWords = "Dry, Water it!";
+    Particle.publish("What to do", String(DisplayWords));
+
+  } else if (s >= thresholdUp){
+    DisplayWords = "Wet, Leave it!";
+    Particle.publish("What to do", String(DisplayWords));
+  }  
+  Serial.println();
+  delay(2000);
+
+  if (publishMethod == "particle") {
+    Particle.publish("temperature", String(t));
+    delay(2000);
+    Particle.publish("humidity", String(hum));
+    delay(2000);
+    Particle.publish("lightLevel", String(illuminance));
+    delay(2000);
+ } 
+
  if (publishMethod == "dweet") {
-    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "temperature", round(t)));
-    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "humidity", round(hum)));
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "temperature", round(t*10)/10.0));
+    delay(1000);
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "humidity", round(hum*10)/10.0));
+    delay(1000);
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "lightLevel", round(illuminance)));
+    delay(1000);
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "SoilMoistureLevel", s));
+    delay(1000);
  }
-    Particle.publish("TempC", t);
 }
 
 // cloud function to change exposure settings (gain and integration time)
