@@ -88,12 +88,12 @@ int flashLedByHttpCode(long httpStatus) {
 int soilval = 0; //soilvalue for storing moisture soilvalue 
 int soilPin = A3;//Declare a variable for the soil moisture sensor 
 int soilPower = 3;//Variable for Soil moisture Power
-int thresholdUp = 400;//everything higher is ok, does not need water
-int thresholdDown = 250;//everything lower needs water
-String DisplayWords;
-int sensorValue;
+int thresholdUp = 3000;//everything higher is ok, does not need water
+int thresholdCenter = 2000;//everything lower needs water
+int thresholdDown = 400;//everything lower needs water
+String DisplayWords;//declare string to use for action
 
-// Get the soil moisture content
+// Get the soil moisture content. Turn power on/off to decrease chances of corrosion (increase lifespan).
 int readSoil()
 {
     digitalWrite(soilPower, HIGH);//turn D3 "On"
@@ -271,14 +271,19 @@ void loop()
     Serial.println("Failed to read Soil moisture level");
     Particle.publish("Failed to read Soil moisture level");
   }
-    if (s <= thresholdDown){
-    DisplayWords = "Dry, Water it!";
-    Particle.publish("What to do", String(DisplayWords));
-
+  if (s <= thresholdDown){
+    DisplayWords = "Dry, needs water!!";
+    Particle.publish("Plant life", String(DisplayWords));
+  } else if ((thresholdDown < s) && (s <= thresholdCenter)){
+    DisplayWords = "Getting thirsty";
+    Particle.publish("Plant life", String(DisplayWords));
+  } else if ((thresholdCenter < s) && (s <= thresholdUp)){
+    DisplayWords = "Normal, all good!";
+    Particle.publish("Plant life", String(DisplayWords));
   } else if (s >= thresholdUp){
-    DisplayWords = "Wet, Leave it!";
-    Particle.publish("What to do", String(DisplayWords));
-  }  
+    DisplayWords = "Soil soaked";
+    Particle.publish("Plant life", String(DisplayWords));
+  }
   Serial.println();
   delay(2000);
 
@@ -292,11 +297,11 @@ void loop()
  } 
 
  if (publishMethod == "dweet") {
-    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "temperature", round(t*10)/10.0));
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "Temperature", round(t*10)/10.0));
     delay(1000);
-    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "humidity", round(hum*10)/10.0));
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "Humidity", round(hum*10)/10.0));
     delay(1000);
-    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "lightLevel", round(illuminance)));
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "LightLevel", round(illuminance)));
     delay(1000);
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "SoilMoistureLevel", s));
     delay(1000);
