@@ -1,4 +1,4 @@
-// Project Cemetery - rewrite 0.8
+// Project Cemetery - rewrite 0.9
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
@@ -48,6 +48,7 @@ int sleepCalculationMultiplier = 70;
 // Enable debug or not
 bool debugEnabled = false;
 
+// function to send to dweet.io , need to fix in dict/array to transmit once instead of 4 seperate times
 int send_to_dweet(String thing, String key, float value) {
     request.hostname = "dweet.io";
     request.port = 80;
