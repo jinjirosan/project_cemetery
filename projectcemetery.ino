@@ -1,4 +1,4 @@
-// Project Cemetery
+// Project Cemetery - rewrite 0.8
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
@@ -85,8 +85,8 @@ int flashLedByHttpCode(long httpStatus) {
 }
 
 // Soil Moisture Sensor requirements
-int soilval = 0; //soilvalue for storing moisture soilvalue 
-int soilPin = A3;//Declare a variable for the soil moisture sensor 
+int soilval = 0; //soilvalue for storing moisture soilvalue
+int soilPin = A3;//Declare a variable for the soil moisture sensor
 int soilPower = 3;//Variable for Soil moisture Power
 int thresholdUp = 3000;//everything higher is ok, does not need water
 int thresholdCenter = 2000;//everything lower needs water
@@ -97,15 +97,15 @@ String DisplayWords;//declare string to use for action
 int readSoil()
 {
     digitalWrite(soilPower, HIGH);//turn D3 "On"
-    delay(10);//wait 10 milliseconds 
-    soilval = analogRead(soilPin);//Read the SIG soilvalue form sensor 
+    delay(10);//wait 10 milliseconds
+    soilval = analogRead(soilPin);//Read the SIG soilvalue form sensor
     digitalWrite(soilPower, LOW);//turn D3 "Off"
     return soilval;//send current moisture soilvalue
 }
 
 void setup()
 {
-// Initialization for 
+// Initialization for
   error_code = 0;
   operational = false;
   autoGainOn = false;
@@ -164,7 +164,7 @@ void setup()
 }
 
 
-void loop() 
+void loop()
 {
 // Loop for Lux sensor
   uint16_t broadband, ir;
@@ -240,7 +240,7 @@ void loop()
   double hum = round(sht31.readHumidity()*10)/10.0;
   double tF = round(((t* 9) /5 + 32)*10)/10.0;
   double s = readSoil();
-  
+
   if (! isnan(t)) {  // check if 'is not a number'
      //Temperature in C
     Serial.print("Temp *C = "); Serial.println(t);
@@ -249,25 +249,25 @@ void loop()
     //Temperature in F
     Serial.print("Temp *F = "); Serial.println(tF);
     Particle.variable("TempF", tF);
-  } else { 
+  } else {
     Serial.println("Failed to read temperature");
     Particle.publish("Failed to read temperature");
   }
-  
+
   if (! isnan(hum)) {  // check if 'is not a number'
     Serial.print("Hum. % = "); Serial.println(hum);
     Particle.variable("Humidity", hum);
     Particle.publish("Humidity", String(hum));
-  } else { 
+  } else {
     Serial.println("Failed to read humidity");
     Particle.publish("Failed to read humidity");
   }
-  
+
   if (! isnan(s)) {  // check if 'is not a number'
     Serial.print("moisture = "); Serial.println(s);
     Particle.variable("moisture", s);
     Particle.publish("Soil moisture", String(s));
-  } else { 
+  } else {
     Serial.println("Failed to read Soil moisture level");
     Particle.publish("Failed to read Soil moisture level");
   }
@@ -294,7 +294,7 @@ void loop()
     delay(2000);
     Particle.publish("lightLevel", String(illuminance));
     delay(2000);
- } 
+ }
 
  if (publishMethod == "dweet") {
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "Temperature", round(t*10)/10.0));
