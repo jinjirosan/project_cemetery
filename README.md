@@ -6,14 +6,14 @@ My grandparents, on my fathers side, died when I was about 5 or 6 years old. It 
 
 They're buried in my city, the cemetery has free wifi which covers to entire grounds and I'm learning C++ & Python on these awesome IoT devices soooo 1+1=3
 
-I can honor my grandfather and keep an I on the plants on their grave by placeing a fully self-contained soil moisture sensor to notify us on how the plantlife is doing.
+I can honor my grandfather and keep an eye on the plants on their grave by placing a fully self-contained soil moisture sensor to notify us on how the plantlife is doing.
 
 # Hardware
 The device is a Particle Photon with
 - SHT31 Temperature-Humidity Sensor
 - TSL2561 Lux/Luminosity Sensor
 - Sparkfun Soil Moisture Sensor
-- Powerboost 1000C
+- Powerboost 1000C (still looking at smaller options)
 - Solar panel 30mA
 - LiPo 1200 mAh
 
