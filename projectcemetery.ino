@@ -1,14 +1,18 @@
-// Project Cemetery - rewrite 0.9
+// Project Cemetery - rewrite 0.9.1
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
 #include "HttpClient.h"                     // Library for dweet.io
+
+// transmit to dweet.io pre-reqs
 HttpClient http;
 http_request_t request;
 http_response_t response;
 http_header_t headers[] = { { NULL, NULL } };
 
+//instanciate the Temperature-Humidity sensor
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
+
 // instanciate a TSL2561 object with I2C address 0x39 --> TSL2561_ADDR (0x39), TSL2561_ADDR_1 (0x49), TSL2561_ADDR_0 (0x29)
 TSL2561 tsl = (TSL2561_ADDR);
 
@@ -62,6 +66,7 @@ int send_to_dweet(String thing, String key, float value) {
     return response.status;
 }
 
+// visual notification on Photon itself: pattern
 int flash_rgb(int r=0, int g=0, int b=0, long time_delay=40) {
     RGB.control(true);
     RGB.color(0, 0, 0);
@@ -73,10 +78,12 @@ int flash_rgb(int r=0, int g=0, int b=0, long time_delay=40) {
     RGB.control(false);
 }
 
+// for solar/LiPo power circuit and battery save mode
 int calculate_sleep(double soc) {
     return (105 - soc) * sleepCalculationMultiplier;
 }
 
+// visual notification on Photon itself: flash sequence for httpStatus
 int flashLedByHttpCode(long httpStatus) {
     if (httpStatus == 200) {
         flash_rgb(0, 255);
@@ -193,8 +200,6 @@ void loop()
       strcpy(tsl_status,"saturated?");
       operational = false;
     }
-
-
 
     // compute illuminance value in lux
     if(!tsl.getLux(integrationTime,broadband,ir,illuminance))
