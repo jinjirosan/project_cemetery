@@ -40,7 +40,7 @@ char autoGain_s[4] = "na";
 uint8_t error_code;
 uint8_t gain_setting;
 
-// Where to publish the data (options are: "dweet" or "particle" dpending on where to send the output)
+// Where to publish the data (options are: "dweet" or "particle" depending on where to send the output)
 String publishMethod = "dweet";
 
 // dweet thing name
@@ -96,14 +96,13 @@ int flashLedByHttpCode(long httpStatus) {
 int soilval = 0; //soilvalue for storing moisture soilvalue
 int soilPin = A3;//Declare a variable for the soil moisture sensor
 int soilPower = 3;//Variable for Soil moisture Power
-int thresholdUp = 3000;//everything higher is ok, does not need water
-int thresholdCenter = 2000;//everything lower needs water
-int thresholdDown = 400;//everything lower needs water
+int thresholdUp = 3400;//everything higher means the soil is soaked
+int thresholdCenter = 2000;//between 2000-3400, everything is good
+int thresholdDown = 400;//between 400-2000, plants get thirsty. Everything lower needs water
 String DisplayWords;//declare string to use for action
 
 // Get the soil moisture content. Turn power on/off to decrease chances of corrosion (increase lifespan).
-int readSoil()
-{
+int readSoil() {
     digitalWrite(soilPower, HIGH);//turn D3 "On"
     delay(10);//wait 10 milliseconds
     soilval = analogRead(soilPin);//Read the SIG soilvalue form sensor
@@ -140,16 +139,13 @@ void setup()
   }
 
   // setting the sensor: gain x1 and 101ms integration time
-  if(!tsl.setTiming(false,1,integrationTime))
-  {
+  if(!tsl.setTiming(false,1,integrationTime)) {
     error_code = tsl.getError();
     strcpy(tsl_status,"setTimingError");
     return;
   }
 
-
-  if (!tsl.setPowerUp())
-  {
+  if (!tsl.setPowerUp()) {
     error_code = tsl.getError();
     strcpy(tsl_status,"PowerUPError");
     return;
@@ -165,12 +161,12 @@ void setup()
   Serial.println("SHT31 test");
   if (! sht31.begin(0x44)) {   // Set to 0x45 for alternate i2c addr
     Serial.println("Couldn't find SHT31");
-    }
+  }
+
   // Soil Moisture Sensor setup
   pinMode(soilPower, OUTPUT);//Set D3 as an OUTPUT
   digitalWrite(soilPower, LOW);//Set to LOW so no power is flowing through the sensor
 }
-
 
 void loop()
 {
