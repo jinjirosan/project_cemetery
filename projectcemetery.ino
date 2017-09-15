@@ -1,4 +1,4 @@
-// Project Cemetery - rewrite 0.9.1
+// Project Cemetery - rewrite 0.9.2
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
