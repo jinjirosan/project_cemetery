@@ -1,8 +1,12 @@
-// Project Cemetery - rewrite 0.9.2
+// Project Cemetery - rewrite 0.9.3
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
+#include <SparkFunBQ27441.h>                // Library for battery - LiPo gauge
 #include "HttpClient.h"                     // Library for dweet.io
+
+// Set BATTERY_CAPACITY to attached LiPo
+const unsigned int BATTERY_CAPACITY = 2500;
 
 // transmit to dweet.io pre-reqs
 HttpClient http;
@@ -25,20 +29,23 @@ D0                          <---->  SDA
 Not connected (floating)    <---->  ADDR
 */
 
-// TSL2561 sensor related vars
+// TSL2561 light sensor related vars
 uint16_t integrationTime;
 double illuminance;
 uint32_t illuminance_int;
 bool autoGainOn;
 
-// TSL2561 execution control var
+// TSL2561 light execution control var
 bool operational;
 
-//TSL2561 status vars
+//TSL2561 light status vars
 char tsl_status[21] = "na";
 char autoGain_s[4] = "na";
 uint8_t error_code;
 uint8_t gain_setting;
+
+//BQ27441 babysitter status vars
+char lipo_status[21] = "na";
 
 // Where to publish the data (options are: "dweet" or "particle" depending on where to send the output)
 String publishMethod = "dweet";
@@ -79,9 +86,9 @@ int flash_rgb(int r=0, int g=0, int b=0, long time_delay=40) {
 }
 
 // for solar/LiPo power circuit and battery save mode
-int calculate_sleep(double soc) {
-    return (105 - soc) * sleepCalculationMultiplier;
-}
+//int calculate_sleep(double soc) {
+//    return (105 - soc) * sleepCalculationMultiplier;
+//}
 
 // visual notification on Photon itself: flash sequence for httpStatus
 int flashLedByHttpCode(long httpStatus) {
@@ -110,19 +117,46 @@ int readSoil() {
     return soilval;//send current moisture soilvalue
 }
 
+// Read battery stats from the BQ27441-G1A
+//unsigned int lp_soc = lipo.soc();  // Read state-of-charge (%)
+//unsigned int lp_volts = lipo.voltage(); // Read battery voltage (mV)
+//int lp_current = lipo.current(AVG); // Read average current (mA)
+//unsigned int lp_fullCapacity = lipo.capacity(FULL); // Read full capacity (mAh)
+//unsigned int lp_capacity = lipo.capacity(REMAIN); // Read remaining capacity (mAh)
+//int lp_power = lipo.power(); // Read average power draw (mW)
+//int lp_health = lipo.soh(); // Read state-of-health (%)
+
 void setup()
 {
+// initialize the BQ27441-G1A and confirm that it's connected and communicating
+  if (!lipo.begin()) // begin() will return true if communication is successful
+  {
+    strcpy(lipo_status,"Error: Unable to communicate with BQ27441");
+    Particle.publish("Battery babysitter", lipo_status);
+  }
+  else {
+    strcpy(lipo_status,"Connected to BQ27441!");
+    Particle.publish("Battery babysitter", lipo_status);
+  }
+
+// set lipo.setCapacity(BATTERY_CAPACITY) based on variable
+lipo.setCapacity(BATTERY_CAPACITY);
+//Particle.publish("Battery size", BATTERY_CAPACITY);
+
 // Initialization for
   error_code = 0;
   operational = false;
   autoGainOn = false;
 
   // variables on the cloud
-  Particle.variable("status", tsl_status);
-  Particle.variable("integ_time", integrationTime);
-  Particle.variable("gain", gain_setting);
-  Particle.variable("auto_gain",autoGain_s);
-  Particle.variable("illuminance", illuminance);
+  Particle.variable("lux_status", tsl_status);
+  Particle.variable("lipo_status", lipo_status);
+  //Particle.variable("lipo_remain", lp_capacity);
+  //Particle.variable("lipo_soc", lp_soc);
+  //Particle.variable("integ_time", integrationTime);
+  //Particle.variable("gain", gain_setting);
+  //Particle.variable("auto_gain",autoGain_s);
+  //Particle.variable("illuminance", illuminance);
   Particle.variable("int_ill", illuminance_int);
 
   //function on the cloud: change sensor exposure settings (mqx 4)
@@ -170,6 +204,10 @@ void setup()
 
 void loop()
 {
+// Battery statistics to Photon variables
+  //Particle.variable("SOC", String(soc));
+  //Particle.publish("charge state", String(soc));
+
 // Loop for Lux sensor
   uint16_t broadband, ir;
 
