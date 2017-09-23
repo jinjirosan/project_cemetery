@@ -151,7 +151,7 @@ lipo.setCapacity(BATTERY_CAPACITY);
   // variables on the cloud
   Particle.variable("lux_status", tsl_status);
   Particle.variable("lipo_status", lipo_status);
-  //Particle.variable("lipo_remain", lp_capacity);
+  //Particle.variable("lipo_remain", String(lp_capacity));
   //Particle.variable("lipo_soc", lp_soc);
   //Particle.variable("integ_time", integrationTime);
   //Particle.variable("gain", gain_setting);
