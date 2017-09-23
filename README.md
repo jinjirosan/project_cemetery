@@ -13,9 +13,9 @@ The device is a Particle Photon with
 - SHT31 Temperature-Humidity Sensor
 - TSL2561 Lux/Luminosity Sensor
 - Sparkfun Soil Moisture Sensor
-- Powerboost 1000C (still looking at smaller options)
-- Solar panel 30mA
-- LiPo 1200 mAh
+- Sparkfun Battery Babysitter
+- Solar panel 200mA
+- LiPo 2500 mAh
 
 # Features
 The main function is to provide information on soil moisture levels, a total of 4 dweets will be sent:
