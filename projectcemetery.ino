@@ -1,4 +1,4 @@
-// Project Cemetery - rewrite 0.9.3
+// Project Cemetery - rewrite 0.9.4 
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
@@ -117,14 +117,22 @@ int readSoil() {
     return soilval;//send current moisture soilvalue
 }
 
+void BatteryStatus()
+{
 // Read battery stats from the BQ27441-G1A
-//unsigned int lp_soc = lipo.soc();  // Read state-of-charge (%)
-//unsigned int lp_volts = lipo.voltage(); // Read battery voltage (mV)
-//int lp_current = lipo.current(AVG); // Read average current (mA)
-//unsigned int lp_fullCapacity = lipo.capacity(FULL); // Read full capacity (mAh)
-//unsigned int lp_capacity = lipo.capacity(REMAIN); // Read remaining capacity (mAh)
-//int lp_power = lipo.power(); // Read average power draw (mW)
-//int lp_health = lipo.soh(); // Read state-of-health (%)
+unsigned int lp_soc = lipo.soc();  // Read state-of-charge (%)
+unsigned int lp_volts = lipo.voltage(); // Read battery voltage (mV)
+int lp_current = lipo.current(AVG); // Read average current (mA)
+unsigned int lp_fullCapacity = lipo.capacity(FULL); // Read full capacity (mAh)
+unsigned int lp_capacity = lipo.capacity(REMAIN); // Read remaining capacity (mAh)
+int lp_power = lipo.power(); // Read average power draw (mW)
+int lp_health = lipo.soh(); // Read state-of-health (%)
+
+Particle.publish("lipo: state-of-charge", String(lp_soc) + " %");
+Particle.publish("lipo: capacity remain", String(lp_capacity) + " mAh");
+Particle.publish("lipo: avg current", String(lp_current) + " mA");
+Particle.publish("lipo: state-of-health", String(lp_health) + " %");
+}
 
 void setup()
 {
@@ -151,8 +159,6 @@ lipo.setCapacity(BATTERY_CAPACITY);
   // variables on the cloud
   Particle.variable("lux_status", tsl_status);
   Particle.variable("lipo_status", lipo_status);
-  //Particle.variable("lipo_remain", String(lp_capacity));
-  //Particle.variable("lipo_soc", lp_soc);
   //Particle.variable("integ_time", integrationTime);
   //Particle.variable("gain", gain_setting);
   //Particle.variable("auto_gain",autoGain_s);
@@ -204,6 +210,7 @@ lipo.setCapacity(BATTERY_CAPACITY);
 
 void loop()
 {
+BatteryStatus();
 // Battery statistics to Photon variables
   //Particle.variable("SOC", String(soc));
   //Particle.publish("charge state", String(soc));
