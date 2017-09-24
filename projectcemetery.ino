@@ -1,11 +1,11 @@
-// Project Cemetery - rewrite 0.9.4 
+// Project Cemetery - rewrite 0.9.5
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
 #include <SparkFunBQ27441.h>                // Library for battery - LiPo gauge
 #include "HttpClient.h"                     // Library for dweet.io
 
-// Set BATTERY_CAPACITY to attached LiPo
+// Set BATTERY_CAPACITY of attached LiPo
 const unsigned int BATTERY_CAPACITY = 2500;
 
 // transmit to dweet.io pre-reqs
@@ -45,7 +45,16 @@ uint8_t error_code;
 uint8_t gain_setting;
 
 //BQ27441 babysitter status vars
-char lipo_status[21] = "na";
+char lipo_status[42] = "na";
+
+// Soil Moisture Sensor vars
+int soilval = 0; //soilvalue for storing moisture soilvalue
+int soilPin = A3;//Declare a variable for the soil moisture sensor
+int soilPower = 3;//Variable for Soil moisture Power
+int thresholdUp = 3400;//everything higher means the soil is soaked
+int thresholdCenter = 2000;//between 2000-3400, everything is good
+int thresholdDown = 400;//between 400-2000, plants get thirsty. Everything lower needs water
+String DisplayWords;//declare string to use for action
 
 // Where to publish the data (options are: "dweet" or "particle" depending on where to send the output)
 String publishMethod = "dweet";
@@ -99,15 +108,6 @@ int flashLedByHttpCode(long httpStatus) {
     }
 }
 
-// Soil Moisture Sensor requirements
-int soilval = 0; //soilvalue for storing moisture soilvalue
-int soilPin = A3;//Declare a variable for the soil moisture sensor
-int soilPower = 3;//Variable for Soil moisture Power
-int thresholdUp = 3400;//everything higher means the soil is soaked
-int thresholdCenter = 2000;//between 2000-3400, everything is good
-int thresholdDown = 400;//between 400-2000, plants get thirsty. Everything lower needs water
-String DisplayWords;//declare string to use for action
-
 // Get the soil moisture content. Turn power on/off to decrease chances of corrosion (increase lifespan).
 int readSoil() {
     digitalWrite(soilPower, HIGH);//turn D3 "On"
@@ -126,12 +126,13 @@ int lp_current = lipo.current(AVG); // Read average current (mA)
 unsigned int lp_fullCapacity = lipo.capacity(FULL); // Read full capacity (mAh)
 unsigned int lp_capacity = lipo.capacity(REMAIN); // Read remaining capacity (mAh)
 int lp_power = lipo.power(); // Read average power draw (mW)
-int lp_health = lipo.soh(); // Read state-of-health (%)
+int lp_health = lipo.soh(); // Read state-of-health (%). Battery condition compared to new.
 
 Particle.publish("lipo: state-of-charge", String(lp_soc) + " %");
 Particle.publish("lipo: capacity remain", String(lp_capacity) + " mAh");
 Particle.publish("lipo: avg current", String(lp_current) + " mA");
 Particle.publish("lipo: state-of-health", String(lp_health) + " %");
+
 }
 
 void setup()
@@ -149,7 +150,6 @@ void setup()
 
 // set lipo.setCapacity(BATTERY_CAPACITY) based on variable
 lipo.setCapacity(BATTERY_CAPACITY);
-//Particle.publish("Battery size", BATTERY_CAPACITY);
 
 // Initialization for
   error_code = 0;
@@ -210,10 +210,8 @@ lipo.setCapacity(BATTERY_CAPACITY);
 
 void loop()
 {
+// call function, take measurements and transmit data to Particle
 BatteryStatus();
-// Battery statistics to Photon variables
-  //Particle.variable("SOC", String(soc));
-  //Particle.publish("charge state", String(soc));
 
 // Loop for Lux sensor
   uint16_t broadband, ir;
@@ -288,6 +286,9 @@ BatteryStatus();
   double tF = round(((t* 9) /5 + 32)*10)/10.0;
   double s = readSoil();
 
+  // Read battery stats from the BQ27441-G1A. Need to clean up as var is already in function.
+  unsigned int lp_soc = lipo.soc();  // Read state-of-charge (%)
+
   if (! isnan(t)) {  // check if 'is not a number'
      //Temperature in C
     Serial.print("Temp *C = "); Serial.println(t);
@@ -345,12 +346,14 @@ BatteryStatus();
 
  if (publishMethod == "dweet") {
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "Temperature", round(t*10)/10.0));
-    delay(1000);
+    delay(1000);  // shorter delay than 1000 does not publish all data to dweet
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "Humidity", round(hum*10)/10.0));
     delay(1000);
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "LightLevel", round(illuminance)));
     delay(1000);
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "SoilMoistureLevel", s));
+    delay(1000);
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "StateOfCharge", lp_soc));
     delay(1000);
  }
 }
