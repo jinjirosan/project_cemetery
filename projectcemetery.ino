@@ -1,4 +1,4 @@
-// Project Cemetery - rewrite 0.9.5
+// Project Cemetery - rewrite 0.9.6
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
@@ -95,9 +95,9 @@ int flash_rgb(int r=0, int g=0, int b=0, long time_delay=40) {
 }
 
 // for solar/LiPo power circuit and battery save mode
-//int calculate_sleep(double soc) {
-//    return (105 - soc) * sleepCalculationMultiplier;
-//}
+int calculate_sleep(double battsoc) {
+    return (105 - battsoc) * sleepCalculationMultiplier;
+}
 
 // visual notification on Photon itself: flash sequence for httpStatus
 int flashLedByHttpCode(long httpStatus) {
@@ -129,10 +129,13 @@ int lp_power = lipo.power(); // Read average power draw (mW)
 int lp_health = lipo.soh(); // Read state-of-health (%). Battery condition compared to new.
 
 Particle.publish("lipo: state-of-charge", String(lp_soc) + " %");
+delay(1000);
 Particle.publish("lipo: capacity remain", String(lp_capacity) + " mAh");
+delay(1000);
 Particle.publish("lipo: avg current", String(lp_current) + " mA");
+delay(1000);
 Particle.publish("lipo: state-of-health", String(lp_health) + " %");
-
+delay(1000);
 }
 
 void setup()
@@ -292,11 +295,11 @@ BatteryStatus();
   if (! isnan(t)) {  // check if 'is not a number'
      //Temperature in C
     Serial.print("Temp *C = "); Serial.println(t);
-    Particle.variable("TempC", t);
+    //Particle.variable("TempC", t);
     Particle.publish("TempC", String(t));
     //Temperature in F
-    Serial.print("Temp *F = "); Serial.println(tF);
-    Particle.variable("TempF", tF);
+    //Serial.print("Temp *F = "); Serial.println(tF);
+    //Particle.variable("TempF", tF);
   } else {
     Serial.println("Failed to read temperature");
     Particle.publish("Failed to read temperature");
@@ -304,7 +307,7 @@ BatteryStatus();
 
   if (! isnan(hum)) {  // check if 'is not a number'
     Serial.print("Hum. % = "); Serial.println(hum);
-    Particle.variable("Humidity", hum);
+    //Particle.variable("Humidity", hum);
     Particle.publish("Humidity", String(hum));
   } else {
     Serial.println("Failed to read humidity");
@@ -313,7 +316,7 @@ BatteryStatus();
 
   if (! isnan(s)) {  // check if 'is not a number'
     Serial.print("moisture = "); Serial.println(s);
-    Particle.variable("moisture", s);
+    //Particle.variable("moisture", s);
     Particle.publish("Soil moisture", String(s));
   } else {
     Serial.println("Failed to read Soil moisture level");
@@ -335,6 +338,10 @@ BatteryStatus();
   Serial.println();
   delay(2000);
 
+// Calculate sleep interval
+int sleepInterval = calculate_sleep(lp_soc);
+Particle.publish("sleepInterval", String(sleepInterval));
+
   if (publishMethod == "particle") {
     Particle.publish("temperature", String(t));
     delay(2000);
@@ -355,7 +362,11 @@ BatteryStatus();
     delay(1000);
     flashLedByHttpCode(send_to_dweet(my_dweet_thing, "StateOfCharge", lp_soc));
     delay(1000);
+    flashLedByHttpCode(send_to_dweet(my_dweet_thing, "SleepInterval", sleepInterval));
+    delay(1000);
  }
+// Deepsleep, interval depending on battery state
+System.sleep(SLEEP_MODE_DEEP, sleepInterval);
 }
 
 // cloud function to change exposure settings (gain and integration time)
