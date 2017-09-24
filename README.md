@@ -18,13 +18,28 @@ The device is a Particle Photon with
 - LiPo 2500 mAh
 
 # Features
-The main function is to provide information on soil moisture levels, a total of 4 dweets will be sent:
+The main function is to provide information on soil moisture levels, a total of 6 dweets will be sent:
 - Soil Moisture level
 - Temperature
 - Humidity
 - Light level
+- LiPo State Of Charge
+- Sleep Interval
 
 The device must be self-contained meaning there is no external power. The onboard LiPo must be enough to cover the night and/or cloudy days. The solar panel must be able to charge the LiPo and provide the primary source of daytime power.
 
 When power levels drop, the device must increase the time between measurements and transmit cycle to save power. Larger increase when charge cycles are not met.
 In the offtime the device must enter deepsleep to save more power.
+
+# Deep Sleep table
+Measurements under normal conditions should be twice a day.
+
+| LiPo capacity remaining | Calc                 | DeepSleep time  |
+|-------------------------|----------------------|-----------------|
+| 100%                    | (105-100)*8640=43200 | 12 hours        |
+| 75%                     | (105-75)*8640=259200 | 3 days          |
+| 50%                     | (105-50)*8640=475200 | 5 days 12 hours |
+| 25%                     | (105-25)*8640=691200 | 8 days          |
+| 10%                     | (105-10)*8640=820800 | 9 days 12 hours |
+
+(calc still need to account for solar panel dark times such as cloudy days and night to increase the DeepSleep interval)
