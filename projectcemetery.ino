@@ -1,4 +1,5 @@
-// Project Cemetery - rewrite 0.9.6
+// Project Cemetery - rewrite 0.9.8
+// Tribute to my grandfather Ronald George Flinkerbusch (1915-1979)
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
@@ -7,6 +8,9 @@
 
 // Set BATTERY_CAPACITY of attached LiPo
 const unsigned int BATTERY_CAPACITY = 2500;
+
+// Sleep calculation multiplier. Set higher when using a lower power solar panel. 70 value + 100% batt = 5:50 mins interval
+int sleepCalculationMultiplier = 70;
 
 // transmit to dweet.io pre-reqs
 HttpClient http;
@@ -61,9 +65,6 @@ String publishMethod = "dweet";
 
 // dweet thing name
 String my_dweet_thing = "project_cemetery";
-
-// Sleep calculation multiplier. Set higher when using a lower power solar panel.
-int sleepCalculationMultiplier = 70;
 
 // Enable debug or not
 bool debugEnabled = false;
