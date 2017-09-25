@@ -1,4 +1,4 @@
-// Project Cemetery - rewrite 0.9.8
+// Project Cemetery - rewrite 0.9.9 - low batt
 // Tribute to my grandfather Ronald George Flinkerbusch (1915-1979)
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
@@ -9,8 +9,18 @@
 // Set BATTERY_CAPACITY of attached LiPo
 const unsigned int BATTERY_CAPACITY = 2500;
 
-// Sleep calculation multiplier. Set higher when using a lower power solar panel. 70 value + 100% batt = 5:50 mins interval
+// Sleep calculation multiplier. Testing purposes: 70 value + 100% batt = 5:50 mins interval
+// default value for twice a day is 8640, see readme.md for DeepSleep table.
 int sleepCalculationMultiplier = 70;
+
+// Battery threshold vars
+const byte SOCI_SET = 20; // Interrupt set threshold at 20%
+const byte SOCI_CLR = 25; // Interrupt clear threshold at 25%
+const byte SOCF_SET = 5; // Final threshold set at 5%
+const byte SOCF_CLR = 10; // Final threshold clear at 10%
+
+// Photon pin connected to BQ27441's GPOUT pin
+const int GPOUT_PIN = 4;
 
 // transmit to dweet.io pre-reqs
 HttpClient http;
@@ -18,7 +28,7 @@ http_request_t request;
 http_response_t response;
 http_header_t headers[] = { { NULL, NULL } };
 
-//instanciate the Temperature-Humidity sensor
+// instanciate the Temperature-Humidity sensor
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
 
 // instanciate a TSL2561 object with I2C address 0x39 --> TSL2561_ADDR (0x39), TSL2561_ADDR_1 (0x49), TSL2561_ADDR_0 (0x29)
@@ -39,26 +49,26 @@ double illuminance;
 uint32_t illuminance_int;
 bool autoGainOn;
 
-// TSL2561 light execution control var
+// TSL2561 light execution control vars
 bool operational;
 
-//TSL2561 light status vars
+// TSL2561 light status vars
 char tsl_status[21] = "na";
 char autoGain_s[4] = "na";
 uint8_t error_code;
 uint8_t gain_setting;
 
-//BQ27441 babysitter status vars
+// BQ27441 babysitter status vars
 char lipo_status[42] = "na";
 
 // Soil Moisture Sensor vars
-int soilval = 0; //soilvalue for storing moisture soilvalue
-int soilPin = A3;//Declare a variable for the soil moisture sensor
-int soilPower = 3;//Variable for Soil moisture Power
-int thresholdUp = 3400;//everything higher means the soil is soaked
-int thresholdCenter = 2000;//between 2000-3400, everything is good
-int thresholdDown = 400;//between 400-2000, plants get thirsty. Everything lower needs water
-String DisplayWords;//declare string to use for action
+int soilval = 0;  // soilvalue for storing moisture soilvalue
+int soilPin = A3;  // Declare a variable for the soil moisture sensor (Photon A3)
+int soilPower = 3;  // Variable for Soil moisture Power pin (Photon D3)
+int thresholdUp = 3400;  // everything higher means the soil is soaked
+int thresholdCenter = 2000;  // between 2000-3400, everything is good
+int thresholdDown = 400;  // between 400-2000, plants get thirsty. Everything lower needs water
+String DisplayWords;  // declare string to use for action
 
 // Where to publish the data (options are: "dweet" or "particle" depending on where to send the output)
 String publishMethod = "dweet";
@@ -103,24 +113,24 @@ int calculate_sleep(double battsoc) {
 // visual notification on Photon itself: flash sequence for httpStatus
 int flashLedByHttpCode(long httpStatus) {
     if (httpStatus == 200) {
-        flash_rgb(0, 255);
+        flash_rgb(0, 255);  // green for OK
     } else {
-        flash_rgb(255, 0);
+        flash_rgb(255, 0);  // red for fail
     }
 }
 
 // Get the soil moisture content. Turn power on/off to decrease chances of corrosion (increase lifespan).
 int readSoil() {
-    digitalWrite(soilPower, HIGH);//turn D3 "On"
-    delay(10);//wait 10 milliseconds
-    soilval = analogRead(soilPin);//Read the SIG soilvalue form sensor
-    digitalWrite(soilPower, LOW);//turn D3 "Off"
-    return soilval;//send current moisture soilvalue
+    digitalWrite(soilPower, HIGH);  // turn pin D3 "On"
+    delay(10);  // wait 10 milliseconds
+    soilval = analogRead(soilPin);  // Read the SIG soilvalue form sensor
+    digitalWrite(soilPower, LOW);  // turn pin D3 "Off"
+    return soilval;  // send current moisture soilvalue
 }
 
+// Read battery stats from the BQ27441-G1A
 void BatteryStatus()
 {
-// Read battery stats from the BQ27441-G1A
 unsigned int lp_soc = lipo.soc();  // Read state-of-charge (%)
 unsigned int lp_volts = lipo.voltage(); // Read battery voltage (mV)
 int lp_current = lipo.current(AVG); // Read average current (mA)
@@ -128,6 +138,20 @@ unsigned int lp_fullCapacity = lipo.capacity(FULL); // Read full capacity (mAh)
 unsigned int lp_capacity = lipo.capacity(REMAIN); // Read remaining capacity (mAh)
 int lp_power = lipo.power(); // Read average power draw (mW)
 int lp_health = lipo.soh(); // Read state-of-health (%). Battery condition compared to new.
+
+// If the GPOUT interrupt is active (low)
+if (!digitalRead(GPOUT_PIN))
+{
+  // Check which of the flags triggered the interrupt
+  if (lipo.socfFlag()) {
+    Particle.publish("lipo: status", "<!-- WARNING: Battery Dangerously low -->");
+    delay(1000);
+  }
+  else if (lipo.socFlag()) {
+    Particle.publish("lipo: status", "<!-- WARNING: Battery Low -->");
+    delay(1000);
+  }
+}
 
 Particle.publish("lipo: state-of-charge", String(lp_soc) + " %");
 delay(1000);
@@ -154,6 +178,28 @@ void setup()
 
 // set lipo.setCapacity(BATTERY_CAPACITY) based on variable
 lipo.setCapacity(BATTERY_CAPACITY);
+
+// setup babysitter threshold/low batt warning config
+lipo.enterConfig(); // To configure the values below, you must be in config mode
+lipo.setCapacity(BATTERY_CAPACITY); // Set the battery capacity
+lipo.setGPOUTPolarity(LOW); // Set GPOUT to active-high
+lipo.setGPOUTFunction(BAT_LOW); // Set GPOUT to BAT_LOW mode
+lipo.setSOC1Thresholds(SOCI_SET, SOCI_CLR); // Set SOCI set and clear thresholds
+lipo.setSOCFThresholds(SOCF_SET, SOCF_CLR); // Set SOCF set and clear thresholds
+lipo.exitConfig();
+
+// Use lipo.GPOUTPolarity to read from the chip and confirm the changes
+if (lipo.GPOUTPolarity())
+  Particle.publish("lipo: lowbatt config", "GPOUT set to active-HIGH");
+else
+  Particle.publish("lipo: lowbatt config", "GPOUT set to active-LOW");
+
+// Use lipo.GPOUTFunction to confirm the functionality of GPOUT
+if (lipo.GPOUTFunction())
+  Particle.publish("lipo: lowbatt config", "GPOUT function set to BAT_LOW");
+else
+  Particle.publish("lipo: lowbatt config", "GPOUT function set to SOC_INT");
+
 
 // Initialization for
   error_code = 0;
@@ -208,8 +254,8 @@ lipo.setCapacity(BATTERY_CAPACITY);
   }
 
   // Soil Moisture Sensor setup
-  pinMode(soilPower, OUTPUT);//Set D3 as an OUTPUT
-  digitalWrite(soilPower, LOW);//Set to LOW so no power is flowing through the sensor
+  pinMode(soilPower, OUTPUT);  // Set D3 as an OUTPUT
+  digitalWrite(soilPower, LOW);  // Set to LOW so no power is flowing through the sensor
 }
 
 void loop()
@@ -339,10 +385,11 @@ BatteryStatus();
   Serial.println();
   delay(2000);
 
-// Calculate sleep interval
-int sleepInterval = calculate_sleep(lp_soc);
-Particle.publish("sleepInterval", String(sleepInterval));
+  // Calculate sleep interval
+  int sleepInterval = calculate_sleep(lp_soc);
+  Particle.publish("sleepInterval", String(sleepInterval));
 
+  // Seperated publish methods, probably remove this "particle" section.
   if (publishMethod == "particle") {
     Particle.publish("temperature", String(t));
     delay(2000);
@@ -367,7 +414,10 @@ Particle.publish("sleepInterval", String(sleepInterval));
     delay(1000);
  }
 // Deepsleep, interval depending on battery state
-System.sleep(SLEEP_MODE_DEEP, sleepInterval);
+//System.sleep(SLEEP_MODE_DEEP, sleepInterval);
+
+// REMOVE WHEN DONE TESTING
+delay(350000);
 }
 
 // cloud function to change exposure settings (gain and integration time)
@@ -382,7 +432,7 @@ int setExposure(String command)
     uint8_t itSwitchInput;
     boolean _setTimingReturn = false;
 
-    // extract gain as char and integrationTime swithc as byte
+    // extract gain as char and integrationTime switch as byte
     gainInput = command.charAt(0);//we expect 0, 1 or 2
     itSwitchInput = command.charAt(2) - '0';//we expect 0,1 or 2
 
