@@ -1,4 +1,4 @@
-// Project Cemetery - rewrite 0.9.9 - low batt
+// Project Cemetery - rewrite 0.9.91 - recalibrate sensor values
 // Tribute to my grandfather Ronald George Flinkerbusch (1915-1979)
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
@@ -65,9 +65,9 @@ char lipo_status[42] = "na";
 int soilval = 0;  // soilvalue for storing moisture soilvalue
 int soilPin = A3;  // Declare a variable for the soil moisture sensor (Photon A3)
 int soilPower = 3;  // Variable for Soil moisture Power pin (Photon D3)
-int thresholdUp = 3400;  // everything higher means the soil is soaked
-int thresholdCenter = 2000;  // between 2000-3400, everything is good
-int thresholdDown = 400;  // between 400-2000, plants get thirsty. Everything lower needs water
+int thresholdUp = 3300;  // everything higher means the soil is soaked
+int thresholdCenter = 3200;  // between 3101-3200, everything is good
+int thresholdDown = 3100;  // below 3100, plants get thirsty. Everything lower needs water
 String DisplayWords;  // declare string to use for action
 
 // Where to publish the data (options are: "dweet" or "particle" depending on where to send the output)
@@ -373,10 +373,10 @@ BatteryStatus();
     DisplayWords = "Dry, needs water!!";
     Particle.publish("Plant life", String(DisplayWords));
   } else if ((thresholdDown < s) && (s <= thresholdCenter)){
-    DisplayWords = "Getting thirsty";
+    DisplayWords = "Normal, all good!";
     Particle.publish("Plant life", String(DisplayWords));
   } else if ((thresholdCenter < s) && (s <= thresholdUp)){
-    DisplayWords = "Normal, all good!";
+    DisplayWords = "Normal, just watered!";
     Particle.publish("Plant life", String(DisplayWords));
   } else if (s >= thresholdUp){
     DisplayWords = "Soil soaked";
