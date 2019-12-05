@@ -1,10 +1,14 @@
-// Project Cemetery - rewrite 0.9.91 - recalibrate sensor values
+// Project Cemetery - rewrite 0.9.92 - recalibrate sensor values+multi-wifi config
 // Tribute to my grandfather Ronald George Flinkerbusch (1915-1979)
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
 #include <SparkFunBQ27441.h>                // Library for battery - LiPo gauge
 #include "HttpClient.h"                     // Library for dweet.io
+#include "wifi_creds.h"                     // Library for wifi credentials
+
+// set Photon to wait for manually provided wifi credentials and manually call Particle.connect() to connect to wifi
+SYSTEM_MODE(SEMI_AUTOMATIC);  
 
 // Set BATTERY_CAPACITY of attached LiPo
 const unsigned int BATTERY_CAPACITY = 2500;
@@ -60,6 +64,8 @@ uint8_t gain_setting;
 
 // BQ27441 babysitter status vars
 char lipo_status[42] = "na";
+
+char lp_soc[4] ="na";
 
 // Soil Moisture Sensor vars
 int soilval = 0;  // soilvalue for storing moisture soilvalue
@@ -165,6 +171,9 @@ delay(1000);
 
 void setup()
 {
+    // call the wifi setup function
+   setupWifi();
+   
 // initialize the BQ27441-G1A and confirm that it's connected and communicating
   if (!lipo.begin()) // begin() will return true if communication is successful
   {
@@ -209,6 +218,7 @@ else
   // variables on the cloud
   Particle.variable("lux_status", tsl_status);
   Particle.variable("lipo_status", lipo_status);
+  Particle.variable("lipo_charge_state", lp_soc);
   //Particle.variable("integ_time", integrationTime);
   //Particle.variable("gain", gain_setting);
   //Particle.variable("auto_gain",autoGain_s);
@@ -418,6 +428,21 @@ BatteryStatus();
 
 // REMOVE WHEN DONE TESTING
 delay(350000);
+}
+
+// function to call the separate wifi_creds file and then connect to the cloud
+void setupWifi() {
+  WiFi.on();
+  WiFi.disconnect();
+  WiFi.clearCredentials();
+  int numWifiCreds = sizeof(wifiCreds) / sizeof(*wifiCreds);
+  for (int i = 0; i < numWifiCreds; i++) {
+    credentials creds = wifiCreds[i];
+    WiFi.setCredentials(creds.ssid, creds.password, creds.authType, creds.cipher);
+  }
+  WiFi.connect();
+  waitUntil(WiFi.ready);
+  Particle.connect();
 }
 
 // cloud function to change exposure settings (gain and integration time)
