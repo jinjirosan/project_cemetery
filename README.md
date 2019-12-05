@@ -17,6 +17,8 @@ The device is a Particle Photon with
 - Solar panel 200mA
 - LiPo 2500 mAh
 
+![the hardware](https://github.com/jinjirosan/project_cemetery/blob/master/images/Project_Cemetary_Hardware.jpeg)
+
 # Features
 The main function is to provide information on soil moisture levels, a total of 6 dweets will be sent:
 - Soil Moisture level
@@ -43,3 +45,10 @@ Measurements under normal conditions should be twice a day.
 | 10%                     | (105-10)*8640=820800 | 9 days 12 hours |
 
 (calc still need to account for solar panel dark times such as cloudy days and night to increase the DeepSleep interval)
+
+# Output to particle.io and dweet.io
+
+![particle.io](https://github.com/jinjirosan/project_cemetery/blob/master/images/Project_Cemetary_Particle_Console.png)
+
+
+![dweet.io](https://github.com/jinjirosan/project_cemetery/blob/master/images/Project_Cemetary_Dweet_IO_output.png)
