@@ -34,15 +34,15 @@ When power levels drop, the device must increase the time between measurements a
 In the offtime the device must enter deepsleep to save more power.
 
 # Deep Sleep table
-Measurements under normal conditions should be twice a day.
+Measurements under normal conditions should be once a day.
 
-| LiPo capacity remaining | Calc                 | DeepSleep time  |
-|-------------------------|----------------------|-----------------|
-| 100%                    | (105-100)*8640=43200 | 12 hours        |
-| 75%                     | (105-75)*8640=259200 | 3 days          |
-| 50%                     | (105-50)*8640=475200 | 5 days 12 hours |
-| 25%                     | (105-25)*8640=691200 | 8 days          |
-| 10%                     | (105-10)*8640=820800 | 9 days 12 hours |
+| LiPo capacity remaining | Calc                   | DeepSleep time  |
+|-------------------------|------------------------|-----------------|
+| 100%                    | (105-100)*17280=86400  | 12 hours        |
+| 75%                     | (105-75)*17280=518400  | 6 days          |
+| 50%                     | (105-50)*17280=950400  | 11 days         |
+| 25%                     | (105-25)*17280=1382400 | 16 days         |
+| 10%                     | (105-10)*17280=1641600 | 19 days         |
 
 (calc still need to account for solar panel dark times such as cloudy days and night to increase the DeepSleep interval)
 
