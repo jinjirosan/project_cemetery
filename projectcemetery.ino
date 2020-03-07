@@ -1,5 +1,8 @@
-// Project Cemetery - rewrite 0.9.92 - recalibrate sensor values+multi-wifi config
+// Project Cemetery - particle_photon_lewis - rewrite 0.9.93 - recalibrate sensor values+deepsleep+multi-wifi config
 // Tribute to my grandfather Ronald George Flinkerbusch (1915-1979)
+//
+// https://github.com/jinjirosan/project_cemetery
+
 #include "math.h"                           // Library fo calculations
 #include <adafruit-sht31.h>                 // Library for Temperature-Humidity sensor
 #include <tsl2561.h>                        // Library for Luminosity/Lux sensor
@@ -14,7 +17,7 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 const unsigned int BATTERY_CAPACITY = 2500;
 
 // Sleep calculation multiplier. Testing purposes: 70 value + 100% batt = 5:50 mins interval
-// default value for twice a day is 8640, see readme.md for DeepSleep table.
+// default value for once a day is 17280, see readme.md for DeepSleep table.
 int sleepCalculationMultiplier = 70;
 
 // Battery threshold vars
