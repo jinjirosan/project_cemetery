@@ -38,7 +38,7 @@ Measurements under normal conditions should be once a day.
 
 | LiPo capacity remaining | Calc                   | DeepSleep time  |
 |-------------------------|------------------------|-----------------|
-| 100%                    | (105-100)*17280=86400  | 12 hours        |
+| 100%                    | (105-100)*17280=86400  | 24 hours        |
 | 75%                     | (105-75)*17280=518400  | 6 days          |
 | 50%                     | (105-50)*17280=950400  | 11 days         |
 | 25%                     | (105-25)*17280=1382400 | 16 days         |
