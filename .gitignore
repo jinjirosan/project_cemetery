@@ -16,3 +16,6 @@ wifi_creds.h
 **/.vscode/extensions.json
 **/include/README
 **/lib/README
+
+# OS specific
+.DS_Store
